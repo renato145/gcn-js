@@ -1,23 +1,20 @@
-import React from 'react';
-import './App.css';
+import React from "react";
+import { Container, Row, Col } from "react-bootstrap";
+import "bootstrap/dist/css/bootstrap.css";
+import { Footer } from "./Footer";
+import "./App.css";
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
+    <Container className="app-container">
+      <header>
+        <h1 className="mt-4 mb-4">GCN JS</h1>
       </header>
-    </div>
+      <main>
+        <p>Testing content</p>
+      </main>
+      <Footer url="gcn-js" />
+    </Container>
   );
 }
 
