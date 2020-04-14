@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useMemo, useCallback } from 'react';
+import React, { useRef, useEffect, useMemo } from 'react';
 import {
   forceSimulation,
   forceLink,
@@ -89,11 +89,6 @@ export const GraphLayout = ({ data, width, height }) => {
     console.log('update center');
   }, [width, height, simulation]);
 
-  const clipPositions = useCallback(
-    (x, y) => [clamp(x, 0, width), clamp(y, 0, height)],
-    [width, height]
-  );
-
   useEffect(() => {
     const svg = select(ref.current);
     const { nodes, links } = data;
@@ -114,6 +109,11 @@ export const GraphLayout = ({ data, width, height }) => {
       .data(links, (d) => d.index)
       .join((enter) => enter.append('line').call(enterLink, scaleLinkWidth))
       .call(updateLinks);
+
+    const clipPositions = (x, y) => [
+      clamp(x, 0, +svg.attr('width')),
+      clamp(y, 0, +svg.attr('height')),
+    ];
 
     svg
       .selectAll('.node')
