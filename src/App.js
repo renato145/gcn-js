@@ -7,7 +7,8 @@ import 'bootstrap/dist/css/bootstrap.css';
 import './App.css';
 import data from './data.json';
 
-console.log(data);
+const width = 600,
+  height = 500;
 
 function App() {
   return (
@@ -17,7 +18,7 @@ function App() {
       </header>
 
       <main>
-        <GraphLayout />
+        <GraphLayout data={data} width={width} height={height} />
       </main>
 
       <Footer url="gcn-js" />

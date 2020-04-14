@@ -1,0 +1,8 @@
+.link {
+  stroke-width: 2px;
+  stroke: #ccc;
+}
+
+.node circle {
+  fill: rgb(42, 134, 170);
+}
