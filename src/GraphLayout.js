@@ -68,7 +68,7 @@ const updateGraph = (selection) => {
   selection.selectAll('.node').call(updateNodes);
 };
 
-export const GraphLayout = ({ data, width, height }) => {
+export const GraphLayout = ({ nodes, links, width, height }) => {
   const ref = useRef();
   const r = 10;
 
@@ -91,7 +91,6 @@ export const GraphLayout = ({ data, width, height }) => {
 
   useEffect(() => {
     const svg = select(ref.current);
-    const { nodes, links } = data;
     const linksExtent = extent(links.map((d) => d.coappearances));
     const scaleLinkWidth = scaleLinear().domain(linksExtent).range([2, 6]);
     const scaleLinkDistance = scaleLinear()
@@ -123,8 +122,9 @@ export const GraphLayout = ({ data, width, height }) => {
       )
       .call(updateNodes);
 
+    simulation.alpha(0.5).restart();
     console.log('update data');
-  }, [simulation, data]);
+  }, [simulation, nodes, links]);
 
   return (
     <svg ref={ref} width={width} height={height} className="svg-container" />
