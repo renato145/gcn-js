@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useMemo } from 'react';
+import React, { useRef, useEffect, useMemo, useCallback } from 'react';
 import {
   forceSimulation,
   forceLink,
@@ -13,19 +13,22 @@ import {
 } from 'd3';
 import './GraphLayout.css';
 
+export const clamp = (value, min, max) =>
+  value >= max ? max : value <= min ? min : value;
+
 const enterLink = (selection, scale) => {
   selection
     .attr('class', 'link')
     .attr('stroke-width', (d) => scale(d.coappearances));
 };
 
-const enterNode = (selection, r, simulation) => {
+const enterNode = (selection, r, simulation, clipPositions) => {
   selection.append('circle').attr('r', r);
 
   selection.attr('class', 'node').call(
     drag()
       .on('start', (d) => dragStart(d, simulation))
-      .on('drag', dragOn)
+      .on('drag', (d) => dragOn(d, clipPositions))
       .on('end', (d) => dragEnd(d, simulation))
   );
 };
@@ -36,9 +39,10 @@ const dragStart = (d, simulation) => {
   d.fy = d.y;
 };
 
-const dragOn = (d) => {
-  d.fx = event.x;
-  d.fy = event.y;
+const dragOn = (d, clipPositions) => {
+  const [x, y] = clipPositions(event.x, event.y);
+  d.fx = x;
+  d.fy = y;
 };
 
 const dragEnd = (d, simulation) => {
@@ -85,15 +89,25 @@ export const GraphLayout = ({ data, width, height }) => {
     console.log('update center');
   }, [width, height, simulation]);
 
+  const clipPositions = useCallback(
+    (x, y) => [clamp(x, 0, width), clamp(y, 0, height)],
+    [width, height]
+  );
+
   useEffect(() => {
     const svg = select(ref.current);
     const { nodes, links } = data;
-    const linksExtent = extent(links.map(d => d.coappearances));
-    const scaleLinkWidth = scaleLinear().domain(linksExtent).range([2, 6])
-    const scaleLinkDistance = scaleLinear().domain(linksExtent).range([20, 200])
+    const linksExtent = extent(links.map((d) => d.coappearances));
+    const scaleLinkWidth = scaleLinear().domain(linksExtent).range([2, 6]);
+    const scaleLinkDistance = scaleLinear()
+      .domain(linksExtent)
+      .range([20, 200]);
 
     simulation.nodes(nodes);
-    simulation.force('links').links(links).distance(d => scaleLinkDistance(d.coappearances));
+    simulation
+      .force('links')
+      .links(links)
+      .distance((d) => scaleLinkDistance(d.coappearances));
 
     svg
       .selectAll('.link')
@@ -104,7 +118,9 @@ export const GraphLayout = ({ data, width, height }) => {
     svg
       .selectAll('.node')
       .data(nodes, (d) => d.index)
-      .join((enter) => enter.append('g').call(enterNode, r, simulation))
+      .join((enter) =>
+        enter.append('g').call(enterNode, r, simulation, clipPositions)
+      )
       .call(updateNodes);
 
     console.log('update data');
