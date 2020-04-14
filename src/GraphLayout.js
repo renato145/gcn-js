@@ -7,24 +7,27 @@ import {
   select,
   drag,
   event,
+  scaleLinear,
+  extent,
+  forceCollide,
 } from 'd3';
 import './GraphLayout.css';
 
-const enterLink = (selection) => {
-  selection.attr('class', 'link');
+const enterLink = (selection, scale) => {
+  selection
+    .attr('class', 'link')
+    .attr('stroke-width', (d) => scale(d.coappearances));
 };
 
-const enterNode = (selection, simulation) => {
-  selection.attr('class', 'node');
-  selection
-    .append('circle')
-    .attr('r', 8)
-    .call(
-      drag()
-        .on('start', (d) => dragStart(d, simulation))
-        .on('drag', dragOn)
-        .on('end', (d) => dragEnd(d, simulation))
-    );
+const enterNode = (selection, r, simulation) => {
+  selection.append('circle').attr('r', r);
+
+  selection.attr('class', 'node').call(
+    drag()
+      .on('start', (d) => dragStart(d, simulation))
+      .on('drag', dragOn)
+      .on('end', (d) => dragEnd(d, simulation))
+  );
 };
 
 const dragStart = (d, simulation) => {
@@ -63,11 +66,13 @@ const updateGraph = (selection) => {
 
 export const GraphLayout = ({ data, width, height }) => {
   const ref = useRef();
+  const r = 10;
 
   const simulation = useMemo(() => {
     return forceSimulation()
       .force('links', forceLink())
       .force('charge', forceManyBody())
+      .force('collide', forceCollide(r))
       .force('center', forceCenter());
   }, []);
 
@@ -83,28 +88,29 @@ export const GraphLayout = ({ data, width, height }) => {
   useEffect(() => {
     const svg = select(ref.current);
     const { nodes, links } = data;
+    const linksExtent = extent(links.map(d => d.coappearances));
+    const scaleLinkWidth = scaleLinear().domain(linksExtent).range([2, 6])
+    const scaleLinkDistance = scaleLinear().domain(linksExtent).range([20, 200])
 
     simulation.nodes(nodes);
-    simulation.force('links').links(links);
+    simulation.force('links').links(links).distance(d => scaleLinkDistance(d.coappearances));
 
     svg
-      .append('g')
-      .attr('class', 'links')
       .selectAll('.link')
       .data(links, (d) => d.index)
-      .join((enter) => enter.append('line').call(enterLink))
+      .join((enter) => enter.append('line').call(enterLink, scaleLinkWidth))
       .call(updateLinks);
 
     svg
-      .append('g')
-      .attr('class', 'nodes')
       .selectAll('.node')
       .data(nodes, (d) => d.index)
-      .join((enter) => enter.append('g').call(enterNode, simulation))
+      .join((enter) => enter.append('g').call(enterNode, r, simulation))
       .call(updateNodes);
 
     console.log('update data');
   }, [simulation, data]);
 
-  return <svg ref={ref} width={width} height={height} />;
+  return (
+    <svg ref={ref} width={width} height={height} className="svg-container" />
+  );
 };
