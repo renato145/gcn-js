@@ -1,10 +1,10 @@
-import React, { useRef, useEffect, useMemo, useState } from 'react';
+import React, { useRef, useEffect, useMemo } from 'react';
 import {
   forceSimulation,
   forceLink,
   forceManyBody,
   forceCenter,
-  select,
+  select, 
   drag,
   event,
   scaleLinear,
@@ -12,7 +12,6 @@ import {
   forceCollide,
 } from 'd3';
 import './GraphLayout.css';
-import { NodeTooltip } from './NodeTooltip';
 
 export const clamp = (value, min, max) =>
   value >= max ? max : value <= min ? min : value;
@@ -37,7 +36,7 @@ function handleLinkMouseOut(d, selection, scale) {
   selection.attr('stroke-width', scale(d.coappearances));
 }
 
-const enterNode = (selection, r, simulation, clipPositions, setToolTip) => {
+const enterNode = (selection, r, simulation, clipPositions) => {
   selection.append('circle').attr('r', r);
 
   selection
@@ -48,12 +47,23 @@ const enterNode = (selection, r, simulation, clipPositions, setToolTip) => {
         .on('drag', (d) => dragOn(d, clipPositions))
         .on('end', (d) => dragEnd(d, simulation))
     )
-    .on('mouseenter', d => {
-      setToolTip({text: d.name, index: d.index, left: `${d.x}px`, top:`${d.y}px`})
-      // setToolTip({text: d.name, index: d.index, left: `${event.pageX}px`, top:`${d.y}px`})
-    })
-    .on('mouseout', () => setToolTip({}));
+    .on('mouseenter', handleTooltipMouseEnter)
+    .on('mouseout', handleTooltipMouseOut);
 };
+
+function handleTooltipMouseEnter(d) {
+  select(this.parentNode)
+    .append('g')
+    .attr('class', 'node-tooltip')
+    .attr('index', d.index)
+    .attr('transform', `translate(${d.x}, ${d.y})`)
+    .append('text')
+    .text(d.name);
+}
+
+function handleTooltipMouseOut() {
+  select('.node-tooltip').remove();
+}
 
 const dragStart = (d, simulation) => {
   if (!event.active) simulation.alphaTarget(0.3).restart();
@@ -83,26 +93,22 @@ const updateLinks = (selection) => {
 
 const updateNodes = (selection) => {
   selection.attr('transform', (d) => `translate(${d.x}, ${d.y})`);
+  const tooltip = select(selection.node().parentNode).select('.node-tooltip');
+  if (tooltip.node()) {
+    const index = +tooltip.attr('index');
+    const {x, y} = selection.data().filter(d => d.index === index)[0];
+    tooltip.attr('transform', `translate(${x}, ${y})`);
+    console.log(select('.svg-container'));
+  }
 };
 
-const updateTooltip = (selection, setToolTip) => {
-  setToolTip(tooltip => {
-    const index = tooltip?.index;
-    if (!index) return
-    const {x, y} = selection.data().filter(d => d.index===index)[0];
-    const out = Object.assign(tooltip, {text: 'asd', left: `${x}px`, top:`${y}px`});
-    return out;
-  });
-};
-
-const updateGraph = (selection, setToolTip) => {
+const updateGraph = (selection) => {
   selection.selectAll('.link').call(updateLinks);
-  selection.selectAll('.node').call(updateNodes).call(updateTooltip, setToolTip);
+  selection.selectAll('.node').call(updateNodes);
 };
 
 export const GraphLayout = ({ nodes, links, width, height }) => {
   const ref = useRef();
-  const [tooltip, setToolTip] = useState({});
   const r = 10;
 
   const simulation = useMemo(() => {
@@ -118,7 +124,7 @@ export const GraphLayout = ({ nodes, links, width, height }) => {
       .force('center')
       .x(width / 2)
       .y(height / 2);
-    simulation.on('tick', () => select(ref.current).call(updateGraph, setToolTip));
+    simulation.on('tick', () => select(ref.current).call(updateGraph));
     console.log('update center');
   }, [width, height, simulation]);
 
@@ -153,19 +159,15 @@ export const GraphLayout = ({ nodes, links, width, height }) => {
       .selectAll('.node')
       .data(nodes, (d) => d.index)
       .join((enter) =>
-        enter.append('g').call(enterNode, r, simulation, clipPositions, setToolTip)
+        enter.append('g').call(enterNode, r, simulation, clipPositions)
       )
       .call(updateNodes);
 
     simulation.alpha(0.5).restart();
     console.log('update data');
   }, [simulation, nodes, links]);
-  console.log(tooltip);
 
   return (
-    <>
-      <svg ref={ref} width={width} height={height} className="svg-container" />
-      <NodeTooltip {...tooltip} />
-    </>
+    <svg ref={ref} width={width} height={height} className="svg-container" />
   );
 };

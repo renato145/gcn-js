@@ -22,3 +22,9 @@
   stroke-width: 1.5px;
   transform: scale(1.5);
 }
+
+.node-tooltip {
+  text-anchor: middle;
+  pointer-events: none;
+  cursor: default;
+}
