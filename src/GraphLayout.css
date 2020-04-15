@@ -1,4 +1,4 @@
-.svg-container {
+.svg-container svg {
   background-color: #eee;
 }
 
@@ -24,7 +24,11 @@
 }
 
 .node-tooltip {
-  text-anchor: middle;
+  position: absolute;
   pointer-events: none;
   cursor: default;
+  background-color: rgba(255, 255, 255, 0.85);
+  padding: 0.25em 0.75em;
+  transform: translate(-50%, -150%);
+  border-radius: 0.5em;
 }

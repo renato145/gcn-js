@@ -4,7 +4,7 @@ import {
   forceLink,
   forceManyBody,
   forceCenter,
-  select, 
+  select,
   drag,
   event,
   scaleLinear,
@@ -51,12 +51,17 @@ const enterNode = (selection, r, simulation, clipPositions) => {
     .on('mouseout', handleTooltipMouseOut);
 };
 
+const getSvgRect = () =>
+  select('.svg-container svg').node().getBoundingClientRect();
+
 function handleTooltipMouseEnter(d) {
-  select(this.parentNode)
-    .append('g')
+  const { top, left } = getSvgRect();
+  select('.svg-container')
+    .append('div')
     .attr('class', 'node-tooltip')
     .attr('index', d.index)
-    .attr('transform', `translate(${d.x}, ${d.y})`)
+    .style('left', `${d.x + left}px`)
+    .style('top', `${d.y + top}px`)
     .append('text')
     .text(d.name);
 }
@@ -93,12 +98,12 @@ const updateLinks = (selection) => {
 
 const updateNodes = (selection) => {
   selection.attr('transform', (d) => `translate(${d.x}, ${d.y})`);
-  const tooltip = select(selection.node().parentNode).select('.node-tooltip');
+  const tooltip = select('.node-tooltip');
   if (tooltip.node()) {
     const index = +tooltip.attr('index');
-    const {x, y} = selection.data().filter(d => d.index === index)[0];
-    tooltip.attr('transform', `translate(${x}, ${y})`);
-    console.log(select('.svg-container'));
+    const { top, left } = getSvgRect();
+    const { x, y } = selection.data().filter((d) => d.index === index)[0];
+    tooltip.style('left', `${x + left}px`).style('top', `${y + top}px`);
   }
 };
 
@@ -168,6 +173,8 @@ export const GraphLayout = ({ nodes, links, width, height }) => {
   }, [simulation, nodes, links]);
 
   return (
-    <svg ref={ref} width={width} height={height} className="svg-container" />
+    <div className="svg-container">
+      <svg ref={ref} width={width} height={height} />
+    </div>
   );
 };
