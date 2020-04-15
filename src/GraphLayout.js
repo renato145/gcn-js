@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useMemo } from 'react';
+import React, { useRef, useEffect, useMemo, useState } from 'react';
 import {
   forceSimulation,
   forceLink,
@@ -12,6 +12,7 @@ import {
   forceCollide,
 } from 'd3';
 import './GraphLayout.css';
+import { NodeTooltip } from './NodeTooltip';
 
 export const clamp = (value, min, max) =>
   value >= max ? max : value <= min ? min : value;
@@ -19,18 +20,39 @@ export const clamp = (value, min, max) =>
 const enterLink = (selection, scale) => {
   selection
     .attr('class', 'link')
-    .attr('stroke-width', (d) => scale(d.coappearances));
+    .attr('stroke-width', (d) => scale(d.coappearances))
+    .on('mouseover', (d, i, all) =>
+      handleLinkMouseOver(d, select(all[i]), scale)
+    )
+    .on('mouseout', (d, i, all) =>
+      handleLinkMouseOut(d, select(all[i]), scale)
+    );
 };
 
-const enterNode = (selection, r, simulation, clipPositions) => {
+function handleLinkMouseOver(d, selection, scale) {
+  selection.attr('stroke-width', 2 * scale(d.coappearances));
+}
+
+function handleLinkMouseOut(d, selection, scale) {
+  selection.attr('stroke-width', scale(d.coappearances));
+}
+
+const enterNode = (selection, r, simulation, clipPositions, setToolTip) => {
   selection.append('circle').attr('r', r);
 
-  selection.attr('class', 'node').call(
-    drag()
-      .on('start', (d) => dragStart(d, simulation))
-      .on('drag', (d) => dragOn(d, clipPositions))
-      .on('end', (d) => dragEnd(d, simulation))
-  );
+  selection
+    .attr('class', 'node')
+    .call(
+      drag()
+        .on('start', (d) => dragStart(d, simulation))
+        .on('drag', (d) => dragOn(d, clipPositions))
+        .on('end', (d) => dragEnd(d, simulation))
+    )
+    .on('mouseenter', d => {
+      setToolTip({text: d.name, index: d.index, left: `${d.x}px`, top:`${d.y}px`})
+      // setToolTip({text: d.name, index: d.index, left: `${event.pageX}px`, top:`${d.y}px`})
+    })
+    .on('mouseout', () => setToolTip({}));
 };
 
 const dragStart = (d, simulation) => {
@@ -63,13 +85,24 @@ const updateNodes = (selection) => {
   selection.attr('transform', (d) => `translate(${d.x}, ${d.y})`);
 };
 
-const updateGraph = (selection) => {
+const updateTooltip = (selection, setToolTip) => {
+  setToolTip(tooltip => {
+    const index = tooltip?.index;
+    if (!index) return
+    const {x, y} = selection.data().filter(d => d.index===index)[0];
+    const out = Object.assign(tooltip, {text: 'asd', left: `${x}px`, top:`${y}px`});
+    return out;
+  });
+};
+
+const updateGraph = (selection, setToolTip) => {
   selection.selectAll('.link').call(updateLinks);
-  selection.selectAll('.node').call(updateNodes);
+  selection.selectAll('.node').call(updateNodes).call(updateTooltip, setToolTip);
 };
 
 export const GraphLayout = ({ nodes, links, width, height }) => {
   const ref = useRef();
+  const [tooltip, setToolTip] = useState({});
   const r = 10;
 
   const simulation = useMemo(() => {
@@ -85,7 +118,7 @@ export const GraphLayout = ({ nodes, links, width, height }) => {
       .force('center')
       .x(width / 2)
       .y(height / 2);
-    simulation.on('tick', () => select(ref.current).call(updateGraph));
+    simulation.on('tick', () => select(ref.current).call(updateGraph, setToolTip));
     console.log('update center');
   }, [width, height, simulation]);
 
@@ -103,12 +136,14 @@ export const GraphLayout = ({ nodes, links, width, height }) => {
       .links(links)
       .distance((d) => scaleLinkDistance(d.coappearances));
 
+    // Links
     svg
       .selectAll('.link')
       .data(links, (d) => d.index)
       .join((enter) => enter.append('line').call(enterLink, scaleLinkWidth))
       .call(updateLinks);
 
+    // Nodes
     const clipPositions = (x, y) => [
       clamp(x, 0, +svg.attr('width')),
       clamp(y, 0, +svg.attr('height')),
@@ -118,15 +153,19 @@ export const GraphLayout = ({ nodes, links, width, height }) => {
       .selectAll('.node')
       .data(nodes, (d) => d.index)
       .join((enter) =>
-        enter.append('g').call(enterNode, r, simulation, clipPositions)
+        enter.append('g').call(enterNode, r, simulation, clipPositions, setToolTip)
       )
       .call(updateNodes);
 
     simulation.alpha(0.5).restart();
     console.log('update data');
   }, [simulation, nodes, links]);
+  console.log(tooltip);
 
   return (
-    <svg ref={ref} width={width} height={height} className="svg-container" />
+    <>
+      <svg ref={ref} width={width} height={height} className="svg-container" />
+      <NodeTooltip {...tooltip} />
+    </>
   );
 };

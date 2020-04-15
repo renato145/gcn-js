@@ -38,7 +38,7 @@ function App() {
           height={height}
         />
         <p>
-        <Button onClick={addData}>Add node</Button>
+          <Button onClick={addData}>Add node</Button>
         </p>
       </main>
 
