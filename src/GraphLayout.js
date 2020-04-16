@@ -10,6 +10,7 @@ import {
   scaleLinear,
   extent,
   forceCollide,
+  selectAll,
 } from 'd3';
 import './GraphLayout.css';
 
@@ -18,23 +19,9 @@ export const clamp = (value, min, max) =>
 
 const enterLink = (selection, scale) => {
   selection
-    .attr('class', 'link')
-    .attr('stroke-width', (d) => scale(d.coappearances))
-    .on('mouseover', (d, i, all) =>
-      handleLinkMouseOver(d, select(all[i]), scale)
-    )
-    .on('mouseout', (d, i, all) =>
-      handleLinkMouseOut(d, select(all[i]), scale)
-    );
+    .attr('class', d => `link node-${d.source.index} node-${d.target.index}`)
+    .attr('stroke-width', (d) => scale(d.coappearances));
 };
-
-function handleLinkMouseOver(d, selection, scale) {
-  selection.attr('stroke-width', 2 * scale(d.coappearances));
-}
-
-function handleLinkMouseOut(d, selection, scale) {
-  selection.attr('stroke-width', scale(d.coappearances));
-}
 
 const enterNode = (selection, scale, simulation, clipPositions) => {
   selection.append('circle').attr('r', (d) => scale(d.degree));
@@ -56,6 +43,7 @@ const getSvgRect = () =>
 
 function handleTooltipMouseEnter(d) {
   const { top, left } = getSvgRect();
+
   select('.node-tooltip')
     .attr('index', d.index)
     .style('left', `${d.x + left}px`)
@@ -63,10 +51,13 @@ function handleTooltipMouseEnter(d) {
     .style('opacity', 1)
     .select('text')
     .text(d.name);
+  
+  selectAll(`.node-${d.index}`).classed('active', true);
 }
 
-function handleTooltipMouseOut() {
+function handleTooltipMouseOut(d) {
   select('.node-tooltip').style('opacity', 0);
+  selectAll(`.node-${d.index}`).classed('active', false);
 }
 
 const dragStart = (d, simulation) => {

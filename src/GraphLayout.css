@@ -6,8 +6,8 @@
   stroke: #ccc;
 }
 
-.link:hover {
-  stroke: #999;
+.link.active {
+  stroke: #888;
 }
 
 .node circle {
