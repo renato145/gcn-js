@@ -20,7 +20,7 @@
 .node circle:hover {
   stroke: rgb(68, 68, 68);
   stroke-width: 1.5px;
-  transform: scale(1.5);
+  transform: scale(1.2);
 }
 
 .node-tooltip {

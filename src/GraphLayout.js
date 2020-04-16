@@ -36,8 +36,8 @@ function handleLinkMouseOut(d, selection, scale) {
   selection.attr('stroke-width', scale(d.coappearances));
 }
 
-const enterNode = (selection, r, simulation, clipPositions) => {
-  selection.append('circle').attr('r', r);
+const enterNode = (selection, scale, simulation, clipPositions) => {
+  selection.append('circle').attr('r', (d) => scale(d.degree));
 
   selection
     .attr('class', 'node')
@@ -113,13 +113,12 @@ const updateGraph = (selection) => {
 
 export const GraphLayout = ({ nodes, links, width, height }) => {
   const ref = useRef();
-  const r = 10;
 
   const simulation = useMemo(() => {
     return forceSimulation()
       .force('links', forceLink())
       .force('charge', forceManyBody())
-      .force('collide', forceCollide(r))
+      .force('collide', forceCollide())
       .force('center', forceCenter());
   }, []);
 
@@ -143,16 +142,19 @@ export const GraphLayout = ({ nodes, links, width, height }) => {
   useEffect(() => {
     const svg = select(ref.current);
     const linksExtent = extent(links.map((d) => d.coappearances));
+    const degreeExtent = extent(nodes.map((d) => d.degree));
     const scaleLinkWidth = scaleLinear().domain(linksExtent).range([2, 6]);
     const scaleLinkDistance = scaleLinear()
       .domain(linksExtent)
       .range([20, 200]);
+    const scaleDegreeRadius = scaleLinear().domain(degreeExtent).range([5, 20]);
 
     simulation.nodes(nodes);
     simulation
       .force('links')
       .links(links)
       .distance((d) => scaleLinkDistance(d.coappearances));
+    simulation.force('collide').radius((d) => scaleDegreeRadius(d.degree));
 
     // Links
     svg
@@ -171,7 +173,9 @@ export const GraphLayout = ({ nodes, links, width, height }) => {
       .selectAll('.node')
       .data(nodes, (d) => d.index)
       .join((enter) =>
-        enter.append('g').call(enterNode, r, simulation, clipPositions)
+        enter
+          .append('g')
+          .call(enterNode, scaleDegreeRadius, simulation, clipPositions)
       )
       .call(updateNodes);
 

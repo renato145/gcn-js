@@ -3,14 +3,15 @@ import { Container, Button } from 'react-bootstrap';
 import {} from 'd3';
 import { Footer } from './Footer';
 import { GraphLayout } from './GraphLayout';
+import { useData } from './useData';
 import 'bootstrap/dist/css/bootstrap.css';
 import './App.css';
-import data from './data.json';
 
 const width = 600,
   height = 500;
 
 function App() {
+  const data = useData();
   const [nodes, setNodes] = useState(data.nodes);
   const [links, setLinks] = useState(data.links);
 
@@ -20,6 +21,7 @@ function App() {
         name: 'added',
         x: width/2,
         y: height/2,
+        degree: Math.random()*20
       })
     );
   };
