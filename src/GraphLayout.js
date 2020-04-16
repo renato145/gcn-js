@@ -11,20 +11,24 @@ import {
   extent,
   forceCollide,
   selectAll,
+  schemeCategory10
 } from 'd3';
 import './GraphLayout.css';
 
 export const clamp = (value, min, max) =>
   value >= max ? max : value <= min ? min : value;
 
-const enterLink = (selection, scale) => {
-  selection
-    .attr('class', d => `link node-${d.source.index} node-${d.target.index}`)
-    .attr('stroke-width', (d) => scale(d.coappearances));
+const enterLink = (selection) => {
+  selection.attr(
+    'class',
+    (d) => `link node-${d.source.index} node-${d.target.index}`
+  );
 };
 
 const enterNode = (selection, scale, simulation, clipPositions) => {
-  selection.append('circle').attr('r', (d) => scale(d.degree));
+  selection.append('circle')
+    .attr('r', (d) => scale(d.degree))
+    .attr('fill', (d) => schemeCategory10[d.k]);
 
   selection
     .attr('class', 'node')
@@ -51,7 +55,7 @@ function handleTooltipMouseEnter(d) {
     .style('opacity', 1)
     .select('text')
     .text(d.name);
-  
+
   selectAll(`.node-${d.index}`).classed('active', true);
 }
 
@@ -132,26 +136,20 @@ export const GraphLayout = ({ nodes, links, width, height }) => {
 
   useEffect(() => {
     const svg = select(ref.current);
-    const linksExtent = extent(links.map((d) => d.coappearances));
     const degreeExtent = extent(nodes.map((d) => d.degree));
-    const scaleLinkWidth = scaleLinear().domain(linksExtent).range([2, 6]);
-    const scaleLinkDistance = scaleLinear()
-      .domain(linksExtent)
-      .range([20, 200]);
     const scaleDegreeRadius = scaleLinear().domain(degreeExtent).range([5, 20]);
 
     simulation.nodes(nodes);
     simulation
       .force('links')
-      .links(links)
-      .distance((d) => scaleLinkDistance(d.coappearances));
+      .links(links);
     simulation.force('collide').radius((d) => scaleDegreeRadius(d.degree));
 
     // Links
     svg
       .selectAll('.link')
       .data(links, (d) => d.index)
-      .join((enter) => enter.append('line').call(enterLink, scaleLinkWidth))
+      .join((enter) => enter.append('line').call(enterLink))
       .call(updateLinks);
 
     // Nodes
