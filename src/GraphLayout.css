@@ -31,4 +31,5 @@
   padding: 0.25em 0.75em;
   transform: translate(-50%, -150%);
   border-radius: 0.5em;
+  transition: opacity 0.2s ease-out;
 }

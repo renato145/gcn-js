@@ -56,18 +56,17 @@ const getSvgRect = () =>
 
 function handleTooltipMouseEnter(d) {
   const { top, left } = getSvgRect();
-  select('.svg-container')
-    .append('div')
-    .attr('class', 'node-tooltip')
+  select('.node-tooltip')
     .attr('index', d.index)
     .style('left', `${d.x + left}px`)
     .style('top', `${d.y + top}px`)
-    .append('text')
+    .style('opacity', 1)
+    .select('text')
     .text(d.name);
 }
 
 function handleTooltipMouseOut() {
-  select('.node-tooltip').remove();
+  select('.node-tooltip').style('opacity', 0);
 }
 
 const dragStart = (d, simulation) => {
@@ -122,6 +121,14 @@ export const GraphLayout = ({ nodes, links, width, height }) => {
       .force('charge', forceManyBody())
       .force('collide', forceCollide(r))
       .force('center', forceCenter());
+  }, []);
+
+  useEffect(() => {
+    select('.svg-container')
+      .append('div')
+      .attr('class', 'node-tooltip')
+      .style('opacity', 0)
+      .append('text');
   }, []);
 
   useEffect(() => {
